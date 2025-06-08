@@ -1,6 +1,6 @@
 # NodeJs-blueprint-with-mysql
 
-git pull https://github.com/scorpiFr/NodeJs-blueprint-with-mysql.git yourdirectory
+git pull https://github.com/scorpiFr/NodeJs-blueprint-with-mysql.git yourdirectory <br/>
 cd yourdirectory <br/>
 <br/>
 npm install <br/>
