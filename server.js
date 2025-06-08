@@ -1,40 +1,23 @@
 require("dotenv").config();
 const express = require("express");
-const mysql = require("mysql2");
-const bodyParser = require("body-parser");
-const TestModel = require("./model/TestModel");
-
 const app = express();
-const PORT = 4000;
+const { sequelize } = require("./models/index");
+const testRoutes = require("./routes/test");
 
-app.use(bodyParser.json());
-
-const db = mysql.createConnection({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASS,
-  database: process.env.DB_NAME,
-});
-
-db.connect((err) => {
-  if (err) {
-    console.error("Erreur MySQL :", err.message);
-    process.exit(1);
-  } else {
-    console.log("Connecté à la base distante.");
-  }
-});
-
-const testModel = new TestModel(db);
-
-// Importer les routes en passant la connexion db
-const testRoutes = require("./routes/test")(db);
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use("/test", testRoutes);
 
 // gestion des erreurs
 const errorHandler = require("./middleware/errorHandler");
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-  console.log(`API en écoute sur http://localhost:${PORT}`);
+app.listen(process.env.PORT, async () => {
+  try {
+    await sequelize.authenticate();
+    console.log("Connexion à la base réussie ✔️");
+  } catch (err) {
+    console.error("Échec de connexion à la base ❌", err);
+  }
+  console.log("Serveur démarré sur http://localhost:4000");
 });

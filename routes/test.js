@@ -1,85 +1,74 @@
 const express = require("express");
 const router = express.Router();
-const TestModel = require("../model/TestModel");
+const { Test } = require("../models");
+const multer = require("multer");
+const upload = multer(); // pas de stockage, en mémoire
 
-// Ici on passe la connexion db en paramètre pour instancier TestModel
-module.exports = (db) => {
-  const testModel = new TestModel(db);
+// GET all
+router.get("/", async (req, res, next) => {
+  try {
+    const data = await Test.findAll();
+    res.json(data);
+  } catch (err) {
+    next(err);
+  }
+});
 
-  // GET /test
-  router.get("/", (req, res, next) => {
-    testModel.getAll((err, results) => {
-      if (err) return next(err);
-      res.json(results);
-    });
-  });
+// GET by ID
+router.get("/:id(\\d+)", async (req, res, next) => {
+  try {
+    const item = await Test.findByPk(req.params.id);
+    if (!item) return res.status(404).json({ erreur: "Non trouvé" });
+    res.json(item);
+  } catch (err) {
+    next(err);
+  }
+});
 
-  // GET /test/:id
-  router.get("/:id", (req, res, next) => {
-    testModel.getById(req.params.id, (err, results) => {
-      if (err) return next(err);
-      if (results.length === 0) {
-        const err = new Error("Non trouvé");
-        err.statusCode = 404;
-        return next(err);
-      }
-
-      res.json(results[0]);
-    });
-  });
-
-  // POST /test
-  router.post("/", (req, res, next) => {
+// POST
+router.post("/", upload.none(), async (req, res, next) => {
+  try {
+    console.log("Reçu via form-data :", req.body);
     const { nom, age, email } = req.body;
-    if (!nom || !email) {
-      const err = new Error("nom et email requis");
-      err.statusCode = 400;
-      return next(err);
-    }
+    const created = await Test.create({ nom, age, email });
 
-    testModel.create({ nom, age, email }, (err, result) => {
-      if (err) return next(err);
-      res.status(201).json({ id: result.insertId, nom, age, email });
+    res.status(201).json(created);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT
+router.put("/:id(\\d+)", async (req, res, next) => {
+  try {
+    const updated = await Test.update(req.body, {
+      where: { id: req.params.id },
     });
-  });
+    res.json({ updated });
+  } catch (err) {
+    next(err);
+  }
+});
 
-  // PUT /test/:id
-  router.put("/:id", (req, res, next) => {
-    const { nom, age, email } = req.body;
-    testModel.update(req.params.id, { nom, age, email }, (err, result) => {
-      if (err) return next(err);
-      if (result.affectedRows === 0) {
-        const err = new Error("ID non trouvé");
-        err.statusCode = 404;
-        return next(err);
-      }
-
-      res.json({ id: req.params.id, nom, age, email });
+// DELETE
+router.delete("/:id(\\d+)", async (req, res, next) => {
+  try {
+    const deleted = await Test.destroy({
+      where: { id: req.params.id },
     });
+    res.json({ deleted });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Route easter egg
+router.get("/yippee", (req, res) => {
+  res.json({
+    message: "Yippee-ki-yay, développeur ! 💥",
+    hero: "John McClane",
+    film: "Die Hard (1988)",
   });
+});
 
-  // DELETE /test/:id
-  router.delete("/:id", (req, res, next) => {
-    testModel.delete(req.params.id, (err, result) => {
-      if (err) return next(err);
-      if (result.affectedRows === 0) {
-        const err = new Error("ID non trouvé");
-        err.statusCode = 404;
-        return next(err);
-      }
-
-      res.json({ message: "Supprimé avec succès." });
-    });
-  });
-
-  // Route easter egg
-  router.get("/yippee", (req, res) => {
-    res.json({
-      message: "Yippee-ki-yay, développeur ! 💥",
-      hero: "John McClane",
-      film: "Die Hard (1988)",
-    });
-  });
-
-  return router;
-};
+module.exports = router;
